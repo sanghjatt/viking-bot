@@ -5,9 +5,9 @@ from pyrogram.types import ChatPermissions
 # Initialize bot
 app = Client(
     "viking_bot",
-    api_id=YOUR_API_ID,
-    api_hash="YOUR_API_HASH",
-    bot_token="YOUR_BOT_TOKEN"
+    api_id=24206775,  # ✅ your API ID (integer, no quotes)
+    api_hash="ca0e7556d7bcb2cda125b2828a9e9444",  # ✅ your API hash (string)
+    bot_token="8407292379:AAH-qdXxDsk_9xmUvnG3PWKNhrGb34zWlNs"  # ✅ your bot token
 )
 
 # --- Commands ---
@@ -88,8 +88,8 @@ users = set()
 
 @app.on_message(filters.command("stats"))
 async def stats(client, message):
-    if message.from_user.id != YOUR_OWNER_ID:
-        return await message.reply("⚠️ Only the Allfather can view these stats!")
+ if message.from_user.id != 7908917401:
+    return await message.reply("⚠️ Only the Allfather can view these stats!")
     await message.reply(f"📊 *Clan Stats:*\n🏰 Groups: {len(groups)}\n🧝 Users: {len(users)}")
 
 @app.on_message(filters.group)
@@ -114,7 +114,7 @@ async def help_cmd(client, message):
         "/raven - user’s info\n"
         "/rune - random Viking rune\n"
         "/stats - clan statistics (only Allfather)\n\n"
-        "⚔️ For more help, summon the Allfather: [Message Owner](https://t.me/YOUR_USERNAME)"
+        "⚔️ For more help, summon the Allfather: [Message Owner](https://t.me/sanghajatt)"
     )
     await message.reply(help_text, disable_web_page_preview=True)
 
