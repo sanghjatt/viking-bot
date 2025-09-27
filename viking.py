@@ -1,7 +1,22 @@
 import random
 from pyrogram import Client, filters
 from pyrogram.types import ChatPermissions
+from flask import Flask
+from threading import Thread
 
+app_web = Flask('')
+
+@app_web.route('/')
+def home():
+    return "Viking Bot is alive!"
+
+def run():
+    app_web.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+    
 # Initialize bot
 app = Client(
     "viking_bot",
