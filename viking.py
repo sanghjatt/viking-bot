@@ -174,4 +174,5 @@ async def duel(client, message):
     await message.reply(f"🩸 The duel begins between {challenger} and {opponent}!\n🏆 {winner} emerges victorious!")
 
 # Run bot
+keep_alive()
 app.run()
