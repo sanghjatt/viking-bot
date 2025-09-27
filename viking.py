@@ -105,3 +105,7 @@ async def main():
     await idle()
 
 asyncio.run(main())
+
+if __name__ == "__main__":
+    print("Viking bot started ✅")
+    app.run()
