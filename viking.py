@@ -1,111 +1,162 @@
-#!/usr/bin/env python3
-# ⚔️ Viking Bot - Render Deployment
-
-import os
 import random
-import asyncio
-from aiohttp import web
 from pyrogram import Client, filters
-from pyrogram.enums import ChatMembersFilter
-from pyrogram import idle
+from pyrogram.types import ChatPermissions
 
-# --- CONFIG ---
-API_ID = int(os.getenv("API_ID", 24206775))
-API_HASH = os.getenv("API_HASH", "ca0e7556d7bcb2cda125b2828a9e9444")
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8407292379:AAH-qdXxDsk_9xmUvnG3PWKNhrGb34zWlNs")
-
-# --- Keep Alive (Web Server) ---
-async def handle(request):
-    return web.Response(text="⚔️ Viking Bot is alive and ready for battle!")
-
-async def run_server():
-    app = web.Application()
-    app.router.add_get("/", handle)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, "0.0.0.0", int(os.getenv("PORT", 8080)))
-    await site.start()
-
-# --- Bot Setup ---
-app = Client("viking", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+# Initialize bot
+app = Client(
+    "viking_bot",
+    api_id=YOUR_API_ID,
+    api_hash="YOUR_API_HASH",
+    bot_token="YOUR_BOT_TOKEN"
+)
 
 # --- Commands ---
+
+# /start
 @app.on_message(filters.command("start"))
-def start(client, message):
-    message.reply_photo(
-        photo="https://endtrz.vercel.app/46869768.jpg",
-        caption="⚔️ Welcome, warrior! ⚔️\n\nSummon me with /ping, /info, /rune, or /raven."
-    )
+async def start(client, message):
+    await message.reply_text("🛡 Welcome, warrior! The gates of Valhalla await your deeds.")
 
+# /ping
 @app.on_message(filters.command("ping"))
-def ping(client, message):
-    message.reply_photo(
-        photo="https://endtrz.vercel.app/e02b960b.jpg",
-        caption="⚔️ By Odin’s beard! ⚔️\n\nThe ravens have flown — I am being ready for the fight, warrior! 🪓🔥"
-    )
+async def ping(client, message):
+    await message.reply_text("⚡ The ravens return swiftly — bot is alive!")
 
+# /info
 @app.on_message(filters.command("info"))
-def info(client, message):
-    message.reply_photo(
-        photo="https://endtrz.vercel.app/11e9d2db.jpg",
-        caption="༒︎The Great Viking༒︎\n\nI am Ragnar Lothbrok, born of legend and blood of Odin..."
-    )
+async def info(client, message):
+    await message.reply_text("🧠 *Ragnar Lothbrok*: A legendary Norse hero, king, and warrior — destined for Valhalla!")
 
-@app.on_message(filters.command("raven"))
-def raven(client, message):
-    user = message.reply_to_message.from_user if message.reply_to_message else message.from_user
-    info = f"🪶 Raven’s Whisper:\n\nName: {user.first_name}\nUsername: @{user.username if user.username else 'N/A'}\nUser ID: {user.id}"
-    message.reply_text(info)
-
+# /banhammer
 @app.on_message(filters.command("banhammer") & filters.group)
 async def banhammer(client, message):
+    if not message.from_user:
+        return await message.reply("⚠️ You must be a human to use this!")
+    member = await client.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ["administrator", "owner"]:
+        return await message.reply("⚠️ Only clan chiefs may cast the banhammer!")
     if not message.reply_to_message:
-        return await message.reply_text("⚠️ Reply to the warrior you wish to cast out.")
-    try:
-        user = message.reply_to_message.from_user
-        await client.ban_chat_member(message.chat.id, user.id)
-        await message.reply_text(f"🔨 By Thor’s hammer, [{user.first_name}](tg://user?id={user.id}) has been cast out of Midgard!")
-    except Exception as e:
-        await message.reply_text(f"⚠️ Failed: {e}")
+        return await message.reply("⚔️ Reply to the enemy you wish to banish!")
+    await client.ban_chat_member(message.chat.id, message.reply_to_message.from_user.id)
+    await message.reply(f"💀 {message.reply_to_message.from_user.mention} was banished from the clan!")
 
+# /callback (unban)
+@app.on_message(filters.command("callback") & filters.group)
+async def callback(client, message):
+    member = await client.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ["administrator", "owner"]:
+        return await message.reply("⚠️ Only clan chiefs can call back fallen warriors!")
+    if not message.reply_to_message:
+        return await message.reply("🕊 Reply to a warrior to call them back to the clan.")
+    user_id = message.reply_to_message.from_user.id
+    await client.unban_chat_member(message.chat.id, user_id)
+    await message.reply(f"🕊 {message.reply_to_message.from_user.mention} has been called back to Valhalla!")
+
+# /clan
 @app.on_message(filters.command("clan") & filters.group)
 async def clan(client, message):
-    try:
-        admins = []
-        async for member in client.get_chat_members(message.chat.id, filter=ChatMembersFilter.ADMINISTRATORS):
-            admins.append(member.user.first_name)
-        text = "🛡️ Clan Chiefs:\n" + "\n".join(f"• {name}" for name in admins)
-        await message.reply_text(text)
-    except Exception as e:
-        await message.reply_text(f"⚠️ Failed to summon clan chiefs: {e}")
+    admins = await client.get_chat_administrators(message.chat.id)
+    text = "⚔️ Clan Chiefs:\n"
+    for admin in admins:
+        text += f"• {admin.user.mention}\n"
+    await message.reply(text)
 
-# --- Runes ---
-runes = [
-    {"symbol": "ᚠ Fehu", "meaning": "Wealth & Prosperity", "desc": "🪙 Fortune & success", "image": "https://endtrz.vercel.app/ccf1bdb8.jpg"},
-    {"symbol": "ᚢ Uruz", "meaning": "Strength & Endurance", "desc": "🐂 Rune of power", "image": "https://endtrz.vercel.app/5f4e3f2a.jpg"},
-    {"symbol": "ᚦ Thurisaz", "meaning": "Protection & Challenge", "desc": "⚡ Trials & awakening", "image": "https://endtrz.vercel.app/0d1258ed.jpg"},
-    {"symbol": "ᚨ Ansuz", "meaning": "Wisdom & Communication", "desc": "🪶 Rune of Odin", "image": "https://endtrz.vercel.app/1873432a.jpg"},
-    {"symbol": "ᛉ Algiz", "meaning": "Protection & Defense", "desc": "🛡️ Shield against chaos", "image": "https://endtrz.vercel.app/5fb68124.jpg"},
-    {"symbol": "ᛏ Tiwaz", "meaning": "Honor & Justice", "desc": "⚔️ Rune of Tyr", "image": "https://endtrz.vercel.app/02828827.jpg"},
-    {"symbol": "ᛟ Othala", "meaning": "Heritage & Legacy", "desc": "🏰 Clan & home", "image": "https://endtrz.vercel.app/dc2606a3.jpg"},
-]
+# /raven
+@app.on_message(filters.command("raven"))
+async def raven(client, message):
+    user = message.from_user
+    text = f"🕊 Raven Report:\n\n⚔️ Name: {user.first_name}\n🧙 ID: `{user.id}`\n🏰 Username: @{user.username if user.username else 'None'}"
+    await message.reply(text)
 
+# /rune
 @app.on_message(filters.command("rune"))
-def rune(client, message):
-    r = random.choice(runes)
-    message.reply_photo(
-        photo=r["image"],
-        caption=f"🔮 **{r['symbol']}**\n**Meaning:** {r['meaning']}\n{r['desc']}"
+async def rune(client, message):
+    runes = [
+        "ᚠ Fehu - Wealth and Prosperity",
+        "ᚢ Uruz - Strength and Power",
+        "ᚦ Thurisaz - Protection and Challenges",
+        "ᚨ Ansuz - Wisdom and Communication",
+        "ᚱ Raido - Journey and Movement",
+        "ᚺ Hagalaz - Transformation through Trials",
+    ]
+    rune = random.choice(runes)
+    await message.reply(f"🔮 Rune Cast: {rune}")
+
+# /stats
+groups = set()
+users = set()
+
+@app.on_message(filters.command("stats"))
+async def stats(client, message):
+    if message.from_user.id != YOUR_OWNER_ID:
+        return await message.reply("⚠️ Only the Allfather can view these stats!")
+    await message.reply(f"📊 *Clan Stats:*\n🏰 Groups: {len(groups)}\n🧝 Users: {len(users)}")
+
+@app.on_message(filters.group)
+async def track_groups(client, message):
+    groups.add(message.chat.id)
+
+@app.on_message(filters.private)
+async def track_users(client, message):
+    users.add(message.from_user.id)
+
+# /help
+@app.on_message(filters.command("help"))
+async def help_cmd(client, message):
+    help_text = (
+        "🧭 *Viking Bot Commands:*\n\n"
+        "/start - to start the bot\n"
+        "/ping - to check if bot is alive\n"
+        "/info - biography of Ragnar Lothbrok\n"
+        "/banhammer - ban a user\n"
+        "/callback - unban a user\n"
+        "/clan - check who are the clan chiefs\n"
+        "/raven - user’s info\n"
+        "/rune - random Viking rune\n"
+        "/stats - clan statistics (only Allfather)\n\n"
+        "⚔️ For more help, summon the Allfather: [Message Owner](https://t.me/YOUR_USERNAME)"
     )
+    await message.reply(help_text, disable_web_page_preview=True)
 
-# --- Run Bot + Server ---
-async def main():
-    print("✅ Viking Bot marching on Render...")
-    await asyncio.gather(run_server(), app.start())
-    await idle()
+# /mute
+@app.on_message(filters.command("mute") & filters.group)
+async def mute_user(client, message):
+    member = await client.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ["administrator", "owner"]:
+        return await message.reply("⚠️ Only clan chiefs can silence a warrior.")
+    if not message.reply_to_message:
+        return await message.reply("⚔️ Reply to a warrior to silence them.")
+    await client.restrict_chat_member(
+        message.chat.id,
+        message.reply_to_message.from_user.id,
+        ChatPermissions()
+    )
+    await message.reply(f"🔕 {message.reply_to_message.from_user.mention} has been silenced by the chief!")
 
-asyncio.run(main())
+# /unmute
+@app.on_message(filters.command("unmute") & filters.group)
+async def unmute_user(client, message):
+    member = await client.get_chat_member(message.chat.id, message.from_user.id)
+    if member.status not in ["administrator", "owner"]:
+        return await message.reply("⚠️ Only clan chiefs can restore voices.")
+    if not message.reply_to_message:
+        return await message.reply("⚔️ Reply to a warrior to restore their voice.")
+    await client.restrict_chat_member(
+        message.chat.id,
+        message.reply_to_message.from_user.id,
+        ChatPermissions(can_send_messages=True)
+    )
+    await message.reply(f"🔊 {message.reply_to_message.from_user.mention} may now speak again!")
 
-if __name__ == "__main__":
-    print("Viking bot started ✅")
-    app.run()
+# /duel
+@app.on_message(filters.command("duel") & filters.group)
+async def duel(client, message):
+    if not message.reply_to_message:
+        return await message.reply("⚔️ Reply to challenge a warrior to a duel!")
+    challenger = message.from_user.first_name
+    opponent = message.reply_to_message.from_user.first_name
+    winner = random.choice([challenger, opponent])
+    await message.reply(f"🩸 The duel begins between {challenger} and {opponent}!\n🏆 {winner} emerges victorious!")
+
+# Run bot
+app.run()
