@@ -7,7 +7,7 @@ import asyncio
 from aiohttp import web
 from pyrogram import Client, filters
 from pyrogram.enums import ChatMembersFilter
-from pyrogram.idle import idle
+from pyrogram import idle
 
 # --- CONFIG ---
 API_ID = int(os.getenv("API_ID", 24206775))
